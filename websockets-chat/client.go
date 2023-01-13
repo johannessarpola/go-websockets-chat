@@ -45,22 +45,27 @@ type Client struct {
 	conn *websocket.Conn
 
 	// Buffered channel of outbound messages.
-	send chan []byte
+	outChannel chan []byte
 }
 
-// readPump pumps messages from the websocket connection to the hub.
+// outbound pumps messages from the websocket connection to the hub.
 //
-// The application runs readPump in a per-connection goroutine. The application
+// The application runs outbound in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump() {
+func (c *Client) outbound() {
 	defer func() {
-		c.hub.unregister <- c
+		c.hub.unregister <- c // Unregister a client from central
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	readDeadline := time.Now().Add(pongWait)
+	c.conn.SetReadDeadline(readDeadline)
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(readDeadline)
+		return nil
+	})
+
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -69,17 +74,17 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1)) // Newlines to spaces
 		c.hub.broadcast <- message
 	}
 }
 
-// writePump pumps messages from the hub to the websocket connection.
+// inbound pumps messages from the hub to the websocket connection.
 //
-// A goroutine running writePump is started for each connection. The
+// A goroutine running inbound is started for each connection. The
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
-func (c *Client) writePump() {
+func (c *Client) inbound() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -87,7 +92,7 @@ func (c *Client) writePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c.outChannel:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
@@ -95,20 +100,20 @@ func (c *Client) writePump() {
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
+			writer, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			writer.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
+			length := len(c.outChannel)
+			for i := 0; i < length; i++ {
+				writer.Write(newline)
+				writer.Write(<-c.outChannel)
 			}
 
-			if err := w.Close(); err != nil {
+			if err := writer.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -120,18 +125,19 @@ func (c *Client) writePump() {
 	}
 }
 
-// serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+// serveWebsocket handles websocket requests from the peer.
+func serveWebsocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
+	sendChannel := make(chan []byte, 256)
+	client := &Client{hub: hub, conn: conn, outChannel: sendChannel}
+	client.hub.register <- client // Register a new client to central
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
-	go client.writePump()
-	go client.readPump()
+	go client.inbound()
+	go client.outbound()
 }

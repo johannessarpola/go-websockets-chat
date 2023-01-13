@@ -32,7 +32,7 @@ func main() {
 	go hub.run()
 	http.HandleFunc("/", serveHome)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
+		serveWebsocket(hub, w, r)
 	})
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {

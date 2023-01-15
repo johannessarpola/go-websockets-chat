@@ -20,6 +20,9 @@
     "electron": "^22.0.2"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.0"
+    "bufferutil": "^4.0.7",
+    "electron-squirrel-startup": "^1.0.0",
+    "utf-8-validate": "^6.0.0",
+    "ws": "^8.12.0"
   }
 }

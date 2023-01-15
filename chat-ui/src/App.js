@@ -1,4 +1,5 @@
 import React  from 'react';
+import { Text } from '@chakra-ui/react'
 import ReactWeather, { useOpenWeather } from 'react-open-weather';
 import './App.css';
 
@@ -22,8 +23,8 @@ function App() {
         unitsLabels={{ temperature: 'C', windSpeed: 'Km/h' }}
         showForecast
       />
-      <h1> Hello world </h1>
-      <p> I'm a paragraph </p>
+      <Text fontSize='6xl'> Hello world </Text>
+      <Text fontSize='md'> I'm a paragraph </Text>
     </div>
   );
 }

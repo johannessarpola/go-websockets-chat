@@ -44,6 +44,7 @@ func (h *Hub) run() {
 				select {
 				case client.outChannel <- message:
 				default:
+					// TODO ´Publish to pulsar
 					close(client.outChannel)
 					delete(h.clients, client)
 				}

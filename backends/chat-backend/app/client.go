@@ -126,7 +126,7 @@ func (c *Client) inbound() {
 }
 
 // serveWebsocket handles websocket requests from the peer.
-func serveWebsocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWebsocket(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

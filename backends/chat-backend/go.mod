@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/apache/pulsar-client-go v0.9.0
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.5.0
 )
 

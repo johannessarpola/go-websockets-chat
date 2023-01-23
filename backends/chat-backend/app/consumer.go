@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,45 +12,55 @@ import (
 // clients.
 type ChatConsumer struct {
 	// Inbound messages from the clients.
-	in   pulsar.Consumer
-	out  chan Message
-	name string
+	in       chan pulsar.ConsumerMessage
+	consumer pulsar.Consumer
+	out      chan Message
+	name     string
 }
 
 func NewChatConsumer(client pulsar.Client, name string, topic string) *ChatConsumer {
 
-	consumer, err := client.Subscribe(pulsar.ConsumerOptions{
+	channel := make(chan pulsar.ConsumerMessage)
+
+	options := pulsar.ConsumerOptions{
 		Topic:            topic,
 		SubscriptionName: name,
-	})
+		Type:             pulsar.Shared,
+	}
+
+	options.MessageChannel = channel
+
+	consumer, err := client.Subscribe(options)
 
 	if err != nil {
 		log.Fatalf("Could not start consumer: %v", err)
 	}
 
 	return &ChatConsumer{
-		in:   consumer,
-		out:  make(chan Message),
-		name: name,
+		in:       channel,
+		consumer: consumer,
+		out:      make(chan Message),
+		name:     name,
 	}
 }
 
 func (cc *ChatConsumer) Run() {
-	for {
-		evt, err := cc.in.Receive(context.Background())
-		if err != nil {
-			log.Fatal(err)
-		}
-		msg := Message{}
 
-		err = json.Unmarshal(evt.Payload(), &msg)
+	defer cc.consumer.Close()
+
+	for cm := range cc.in {
+		msg := cm.Message
+		internalMsg := Message{}
+
+		err := json.Unmarshal(msg.Payload(), &internalMsg)
 		if err != nil {
 			// TODO Send to DLQ/or ignore
 			log.Fatal(err)
 		}
 		fmt.Printf("Received message msgId: %#v -- content: '%s'\n",
-			evt.ID(), string(evt.Payload()))
+			msg.ID(), internalMsg.Message)
 
-		cc.out <- msg
+		cc.out <- internalMsg
+		cc.consumer.Ack(msg)
 	}
 }

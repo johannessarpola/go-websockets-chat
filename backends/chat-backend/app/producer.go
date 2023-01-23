@@ -40,22 +40,23 @@ func (cp *ChatProducer) Run() {
 
 	defer cp.out.Close()
 
-	for {
-		select {
-		case message := <-cp.in:
+	for nessage := range cp.in {
 
-			pd, err := json.Marshal(message)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			_, err = cp.out.Send(context.Background(), &pulsar.ProducerMessage{
-				Payload: pd,
-			})
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+		fmt.Println("internal pipe")
+		fmt.Println(nessage.Message)
+
+		pd, err := json.Marshal(nessage)
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
+		_, err = cp.out.Send(context.Background(), &pulsar.ProducerMessage{
+			Payload: pd,
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 	}
 }

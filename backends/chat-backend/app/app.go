@@ -6,9 +6,7 @@ package app
 
 import (
 	"flag"
-	"fmt"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -28,30 +26,31 @@ func App() {
 
 	defer client.Close()
 
-	cp := NewChatProducer(client, "name", "tests")
-	cc := NewChatConsumer(client, "name", "tests")
+	cp := NewChatProducer(client, "producer", "tests")
+	cc := NewChatConsumer(client, "consumer", "tests")
 
 	go cp.Run()
 	go cc.Run()
-
-	fmt.Println("Published message")
 
 	flag.Parse()
 	// hub := NewHub()
 
 	u := NewUser("name")
-	m := NewMessage(u, "mesage")
+	m := NewMessage(u, "message")
+
+	m2 := NewMessage(u, "message2")
 
 	cp.in <- *m
+	cp.in <- *m2
 
 	//	go hub.run() // TODO Reconfigure to use Pulsar
-	http.HandleFunc("/message", func(w http.ResponseWriter, r *http.Request) {
+	//http.HandleFunc("/message", func(w http.ResponseWriter, r *http.Request) {
 
-		//		ServeWebsocket(hub, w, r)
-	})
+	//		ServeWebsocket(hub, w, r)
+	//})
 
-	err = http.ListenAndServe(*addr, nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+	//err = http.ListenAndServe(*addr, nil)
+	// if err != nil {
+	// 	log.Fatal("ListenAndServe: ", err)
+	// }
 }

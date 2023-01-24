@@ -18,14 +18,21 @@ type ChatConsumer struct {
 	name     string
 }
 
-func NewChatConsumer(client pulsar.Client, name string, topic string) *ChatConsumer {
+func NewChatConsumer(client pulsar.Client, name string, topic string, dlq string) *ChatConsumer {
 
 	channel := make(chan pulsar.ConsumerMessage)
 
+	dlqOptions := pulsar.DLQPolicy{
+		DeadLetterTopic: dlq,
+		// TODO RetryLetterTopic
+	}
+
 	options := pulsar.ConsumerOptions{
+		// TODO Schema
 		Topic:            topic,
 		SubscriptionName: name,
 		Type:             pulsar.Shared,
+		DLQ:              &dlqOptions,
 	}
 
 	options.MessageChannel = channel
@@ -50,17 +57,16 @@ func (cc *ChatConsumer) Run() {
 
 	for cm := range cc.in {
 		msg := cm.Message
-		internalMsg := Message{}
+		jsonMsg := Message{}
 
-		err := json.Unmarshal(msg.Payload(), &internalMsg)
+		err := json.Unmarshal(msg.Payload(), &jsonMsg)
 		if err != nil {
-			// TODO Send to DLQ/or ignore
-			log.Fatal(err)
+			log.Println(err)
 		}
 		fmt.Printf("Received message msgId: %#v -- content: '%s'\n",
-			msg.ID(), internalMsg.Message)
+			msg.ID(), jsonMsg.Message)
 
-		cc.out <- internalMsg
+		cc.out <- jsonMsg
 		cc.consumer.Ack(msg)
 	}
 }

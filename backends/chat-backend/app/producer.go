@@ -13,9 +13,9 @@ import (
 // clients.
 type ChatProducer struct {
 	// Inbound messages from the clients.
-	in   chan Message
-	out  pulsar.Producer
-	name string
+	Channel        chan Message
+	pulsarProducer pulsar.Producer
+	name           string
 }
 
 func NewChatProducer(client pulsar.Client, name string, topic string) *ChatProducer {
@@ -30,32 +30,35 @@ func NewChatProducer(client pulsar.Client, name string, topic string) *ChatProdu
 	}
 
 	return &ChatProducer{
-		in:   make(chan Message),
-		out:  producer,
-		name: name,
+		Channel:        make(chan Message),
+		pulsarProducer: producer,
+		name:           name,
 	}
+}
+
+func (cp *ChatProducer) Close() {
+	cp.pulsarProducer.Close()
 }
 
 func (cp *ChatProducer) Run() {
 
-	defer cp.out.Close()
-
-	for nessage := range cp.in {
+	for message := range cp.Channel {
 
 		fmt.Println("internal pipe")
-		fmt.Println(nessage.Message)
+		fmt.Println(message.Message)
 
-		pd, err := json.Marshal(nessage)
+		pd, err := json.Marshal(message)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		_, err = cp.out.Send(context.Background(), &pulsar.ProducerMessage{
+		_, err = cp.pulsarProducer.Send(context.Background(), &pulsar.ProducerMessage{
 			Payload: pd,
 		})
+		println("sent to pulsars")
 		if err != nil {
+			println("err err")
 			fmt.Println(err)
-			return
 		}
 
 	}

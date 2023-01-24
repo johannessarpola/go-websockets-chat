@@ -20,7 +20,7 @@ type grpcServer struct {
 
 func NewGRPCServer() *grpc.Server {
 
-	var err error
+	//var err error
 	gsrv := grpc.NewServer()
 	srv := grpcServer{
 		// TODO Pulsar producer

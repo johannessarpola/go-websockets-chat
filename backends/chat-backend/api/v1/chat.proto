@@ -31,7 +31,7 @@ message Message {
 
 message NewMessage {
     string message = 1;
-    string time = 2;
+    string time = 2; // TODO remove
 }
 
 message PollReply {

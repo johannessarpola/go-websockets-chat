@@ -6,7 +6,13 @@ package app
 
 import (
 	"flag"
+	"log"
+	"net"
 	"time"
+
+	"github.com/johannessarpola/go-websockets-chat/models"
+	"github.com/johannessarpola/go-websockets-chat/server"
+	"google.golang.org/grpc/reflection"
 )
 
 var addr = flag.String("addr", ":8080", "http service address")
@@ -15,14 +21,22 @@ func App() {
 
 	gw := NewPulsarGateway("pulsar://localhost:6650")
 	go gw.Run()
+	go serveHttp(":8082")
+	go genSomething(gw)
 
 	flag.Parse()
-	// hub := NewHub()
 
-	u := NewUser("name")
-	m := NewMessage(u, "message")
-	m2 := NewMessage(u, "message2")
-	m3 := NewMessage(u, "message3")
+	for {
+		time.Sleep(time.Second)
+	}
+
+}
+
+func genSomething(gw *PulsarGateway) {
+	u := models.NewUser("name")
+	m := models.NewMessage(u, "message")
+	m2 := models.NewMessage(u, "message2")
+	m3 := models.NewMessage(u, "message3")
 
 	gw.Producer.Channel <- *m
 	time.Sleep(5 * time.Second)
@@ -30,19 +44,23 @@ func App() {
 	time.Sleep(5 * time.Second)
 	gw.Producer.Channel <- *m3
 	time.Sleep(5 * time.Second)
+}
 
-	for {
-		time.Sleep(time.Second)
+func serveHttp(port string) {
+
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
 	}
 
-	//	go hub.run() // TODO Reconfigure to use Pulsar
-	//http.HandleFunc("/message", func(w http.ResponseWriter, r *http.Request) {
+	defer lis.Close()
 
-	//		ServeWebsocket(hub, w, r)
-	//})
+	srv := server.NewGRPCServer()
 
-	//err = http.ListenAndServe(*addr, nil)
-	// if err != nil {
-	// 	log.Fatal("ListenAndServe: ", err)
-	// }
+	// Register reflection service on gRPC server.
+	reflection.Register(srv)
+	if err := srv.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
 }

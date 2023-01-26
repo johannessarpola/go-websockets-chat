@@ -7,13 +7,14 @@ import (
 	"log"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/johannessarpola/go-websockets-chat/models"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type ChatProducer struct {
 	// Inbound messages from the clients.
-	Channel        chan Message
+	Channel        chan models.Message
 	pulsarProducer pulsar.Producer
 	name           string
 }
@@ -30,7 +31,7 @@ func NewChatProducer(client pulsar.Client, name string, topic string) *ChatProdu
 	}
 
 	return &ChatProducer{
-		Channel:        make(chan Message),
+		Channel:        make(chan models.Message),
 		pulsarProducer: producer,
 		name:           name,
 	}

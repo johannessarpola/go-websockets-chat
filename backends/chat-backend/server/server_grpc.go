@@ -1,4 +1,4 @@
-package app
+package server
 
 import (
 	//"context"
@@ -14,17 +14,17 @@ import (
 
 type grpcServer struct {
 	api.UnimplementedChatServer
-	// TODO Pulsar producer
-	// TODO Pulsar consumer
+	//toBackend   chan models.Message
+	//fromBackend chan models.Message
 }
 
-func NewGRPCServer() *grpc.Server {
+func NewGRPCServer( /* toBackend chan models.Message, fromBackend chan models.Message */ ) *grpc.Server {
 
 	//var err error
 	gsrv := grpc.NewServer()
 	srv := grpcServer{
-		// TODO Pulsar producer
-		// TODO Pulsar consumer
+		// toBackend:   toBackend,
+		// fromBackend: fromBackend,
 	}
 	api.RegisterChatServer(gsrv, &srv)
 	return gsrv

@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/johannessarpola/go-websockets-chat/models"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -13,7 +14,7 @@ import (
 type ChatConsumer struct {
 	// Inbound messages from the clients.
 	pulsarConsumer pulsar.Consumer
-	Channel        chan Message
+	Channel        chan models.Message
 	name           string
 }
 
@@ -40,7 +41,7 @@ func NewChatConsumer(client pulsar.Client, name string, topic string, dlq string
 
 	return &ChatConsumer{
 		pulsarConsumer: consumer,
-		Channel:        make(chan Message),
+		Channel:        make(chan models.Message),
 		name:           name,
 	}
 }
@@ -56,7 +57,7 @@ func (cc *ChatConsumer) Run() {
 		cc.pulsarConsumer.Ack(msg)
 
 		fmt.Println("internal consumer")
-		jsonMsg := Message{}
+		jsonMsg := models.Message{}
 
 		err := json.Unmarshal(msg.Payload(), &jsonMsg)
 		if err != nil {

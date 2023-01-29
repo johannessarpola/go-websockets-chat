@@ -15,21 +15,31 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-var addr = flag.String("addr", ":8080", "http service address")
-
 func App() {
+	flag.Parse()
+	//mux := http.NewServeMux()
+	//reflection.Register(srv)
+
+	//mux.HandleFunc("/", srv.ServeHTTP)
 
 	gw := NewPulsarGateway("pulsar://localhost:6650")
 	go gw.Run()
-	go serveHttp(":8082")
 	go genSomething(gw)
 
-	flag.Parse()
-
-	for {
-		time.Sleep(time.Second)
+	srv := server.NewGRPCServer()
+	port := ":8080"
+	//http.ListenAndServe(":8082", mux)
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
 	}
 
+	reflection.Register(srv) // TODO If debug use this
+	if err := srv.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+
+	defer lis.Close()
 }
 
 func genSomething(gw *PulsarGateway) {
@@ -44,23 +54,4 @@ func genSomething(gw *PulsarGateway) {
 	time.Sleep(5 * time.Second)
 	gw.Producer.Channel <- *m3
 	time.Sleep(5 * time.Second)
-}
-
-func serveHttp(port string) {
-
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
-	defer lis.Close()
-
-	srv := server.NewGRPCServer()
-
-	// Register reflection service on gRPC server.
-	reflection.Register(srv)
-	if err := srv.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
-
 }

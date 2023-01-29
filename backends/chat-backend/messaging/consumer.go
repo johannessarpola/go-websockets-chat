@@ -1,4 +1,4 @@
-package app
+package messaging
 
 import (
 	"encoding/json"
@@ -11,14 +11,14 @@ import (
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
-type ChatConsumer struct {
+type chatConsumer struct {
 	// Inbound messages from the clients.
 	pulsarConsumer pulsar.Consumer
 	Channel        chan models.Message
 	name           string
 }
 
-func NewChatConsumer(client pulsar.Client, name string, topic string, dlq string) *ChatConsumer {
+func NewChatConsumer(client pulsar.Client, name string, topic string, dlq string) *chatConsumer {
 	//dlqOptions := pulsar.DLQPolicy{
 	//	DeadLetterTopic: dlq,
 	//	MaxDeliveries:   1,
@@ -39,18 +39,18 @@ func NewChatConsumer(client pulsar.Client, name string, topic string, dlq string
 		log.Fatalf("Could not start consumer: %v", err)
 	}
 
-	return &ChatConsumer{
+	return &chatConsumer{
 		pulsarConsumer: consumer,
 		Channel:        make(chan models.Message),
 		name:           name,
 	}
 }
 
-func (cc *ChatConsumer) Close() {
+func (cc *chatConsumer) Close() {
 	cc.pulsarConsumer.Close()
 }
 
-func (cc *ChatConsumer) Run() {
+func (cc *chatConsumer) Run() {
 
 	for record := range cc.pulsarConsumer.Chan() {
 		msg := record.Message

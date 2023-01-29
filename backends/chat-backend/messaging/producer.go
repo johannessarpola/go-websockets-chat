@@ -1,4 +1,4 @@
-package app
+package messaging
 
 import (
 	"context"
@@ -12,14 +12,14 @@ import (
 
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
-type ChatProducer struct {
+type chatProducer struct {
 	// Inbound messages from the clients.
 	Channel        chan models.Message
 	pulsarProducer pulsar.Producer
 	name           string
 }
 
-func NewChatProducer(client pulsar.Client, name string, topic string) *ChatProducer {
+func NewChatProducer(client pulsar.Client, name string, topic string) *chatProducer {
 
 	producer, err := client.CreateProducer(pulsar.ProducerOptions{
 		Topic: topic,
@@ -30,18 +30,18 @@ func NewChatProducer(client pulsar.Client, name string, topic string) *ChatProdu
 		log.Fatalf("Could not start producer: %v", err)
 	}
 
-	return &ChatProducer{
+	return &chatProducer{
 		Channel:        make(chan models.Message),
 		pulsarProducer: producer,
 		name:           name,
 	}
 }
 
-func (cp *ChatProducer) Close() {
+func (cp *chatProducer) Close() {
 	cp.pulsarProducer.Close()
 }
 
-func (cp *ChatProducer) Run() {
+func (cp *chatProducer) Run() {
 
 	for message := range cp.Channel {
 

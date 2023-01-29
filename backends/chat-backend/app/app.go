@@ -6,10 +6,12 @@ package app
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"time"
 
+	"github.com/johannessarpola/go-websockets-chat/messaging"
 	"github.com/johannessarpola/go-websockets-chat/models"
 	"github.com/johannessarpola/go-websockets-chat/server"
 	"google.golang.org/grpc/reflection"
@@ -17,18 +19,14 @@ import (
 
 func App() {
 	flag.Parse()
-	//mux := http.NewServeMux()
-	//reflection.Register(srv)
 
-	//mux.HandleFunc("/", srv.ServeHTTP)
-
-	gw := NewPulsarGateway("pulsar://localhost:6650")
+	gw := messaging.NewPulsarGateway("pulsar://localhost:6650")
 	go gw.Run()
 	go genSomething(gw)
 
 	srv := server.NewGRPCServer()
 	port := ":8080"
-	//http.ListenAndServe(":8082", mux)
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -42,16 +40,12 @@ func App() {
 	defer lis.Close()
 }
 
-func genSomething(gw *PulsarGateway) {
-	u := models.NewUser("name")
-	m := models.NewMessage(u, "message")
-	m2 := models.NewMessage(u, "message2")
-	m3 := models.NewMessage(u, "message3")
-
-	gw.Producer.Channel <- *m
-	time.Sleep(5 * time.Second)
-	gw.Producer.Channel <- *m2
-	time.Sleep(5 * time.Second)
-	gw.Producer.Channel <- *m3
-	time.Sleep(5 * time.Second)
+func genSomething(gw messaging.Gateway) {
+	u := models.NewUser("heartbeat")
+	for {
+		msgBody := fmt.Sprintf("message genrated at %s", time.Now())
+		m := models.NewMessage(u, msgBody)
+		gw.Send(*m)
+		time.Sleep(5 * time.Second)
+	}
 }

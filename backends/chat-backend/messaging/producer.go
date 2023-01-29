@@ -44,19 +44,15 @@ func (cp *chatProducer) Close() {
 func (cp *chatProducer) Run() {
 
 	for message := range cp.Channel {
-
-		fmt.Println("internal pipe")
-		fmt.Println(message.Message)
-
 		pd, err := json.Marshal(message)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // TODO
 			return
 		}
 		_, err = cp.pulsarProducer.Send(context.Background(), &pulsar.ProducerMessage{
 			Payload: pd,
 		})
-		println("sent to pulsars")
+		println("\nsent to pulsars")
 		if err != nil {
 			println("err err")
 			fmt.Println(err)

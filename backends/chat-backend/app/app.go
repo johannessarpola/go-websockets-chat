@@ -23,6 +23,7 @@ func App() {
 	gw := messaging.NewPulsarGateway("pulsar://localhost:6650")
 	go gw.Run()
 	go genSomething(gw)
+	go printMsgs(gw)
 
 	srv := server.NewGRPCServer()
 	port := ":8080"
@@ -40,12 +41,27 @@ func App() {
 	defer lis.Close()
 }
 
+func printMsgs(gw messaging.Gateway) {
+	count := 0
+
+	for {
+		msgs, _ := gw.Poll()
+		fmt.Println("Received batch of messages")
+		for _, m := range msgs {
+			count++
+			fmt.Printf("Received message %s\n", m.Message)
+		}
+
+		fmt.Printf("Received %d messages\n", count)
+	}
+}
+
 func genSomething(gw messaging.Gateway) {
 	u := models.NewUser("heartbeat")
 	for {
 		msgBody := fmt.Sprintf("message genrated at %s", time.Now())
 		m := models.NewMessage(u, msgBody)
 		gw.Send(*m)
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }

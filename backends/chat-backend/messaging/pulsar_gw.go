@@ -1,7 +1,6 @@
 package messaging
 
 import (
-	"errors"
 	"log"
 	"time"
 
@@ -21,8 +20,8 @@ func (gw *PulsarGateway) Send(message models.Message) error {
 }
 
 func (gw *PulsarGateway) Poll() ([]models.Message, error) {
-	// TODO Implement
-	return nil, errors.New("Not implemented, yet")
+
+	return gw.consumer.Poll()
 }
 
 // Event loop with cleanup
@@ -31,7 +30,8 @@ func (gw *PulsarGateway) Run() {
 	defer gw.producer.Close()
 	defer gw.consumer.Close()
 
-	go gw.consumer.Run()
+	//go gw.consumer.Run()
+
 	gw.producer.Run()
 
 }

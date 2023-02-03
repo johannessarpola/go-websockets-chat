@@ -26,7 +26,7 @@ func App() {
 	go printMsgs(gw)
 
 	srv := server.NewGRPCServer()
-	port := ":8080"
+	port := ":8081" // TODO fromEnv
 
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

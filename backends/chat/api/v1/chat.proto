@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/johannessarpola/go-websockets-chat/api_v1";
+
+import "google/protobuf/timestamp.proto";
+
+message User {
+    string id = 1;
+    string name = 2;
+}
+
+message UserRegister {
+    string name = 1;
+}
+
+message UserRegisterReply {
+    User user = 1;
+}
+
+message UserListReply {
+    repeated User messages = 1;
+}
+
+message Message {
+    User user = 1;
+    string message = 2;
+    google.protobuf.Timestamp time = 3;
+}
+
+message NewMessage {
+    string message = 1;
+    string time = 2; // TODO remove
+}
+
+message PollReply {
+    repeated Message messages = 1;
+}
+
+message Null {};
+
+service Chat {
+    rpc Register (UserRegister) returns (UserRegisterReply) {}
+    rpc ListUsers (Null) returns (UserListReply) {}
+    rpc Message (NewMessage) returns (Null) {}
+    rpc Poll (Null) returns (PollReply) {}
+}

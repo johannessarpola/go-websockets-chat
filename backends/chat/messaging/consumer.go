@@ -11,10 +11,7 @@ import (
 	"github.com/johannessarpola/go-websockets-chat/models"
 )
 
-// Hub maintains the set of active clients and broadcasts messages to the
-// clients.
 type chatConsumer struct {
-	// Inbound messages from the clients.
 	pulsarConsumer pulsar.Consumer
 	name           string
 }
@@ -76,17 +73,6 @@ func (cc *chatConsumer) Poll() ([]models.Message, error) {
 
 	size := 10
 	arr := make([]models.Message, size)
-
-	// channel := cc.pulsarConsumer.Chan()
-
-	// select {
-	// case <-time.After(10 * time.Second):
-	// case pm := <-channel:
-	// 	fmt.Printf("Message ID of %s\n", pm.ID())
-	// 	arr = append(arr, transformMessage(pm))
-	// 	cc.pulsarConsumer.Ack(pm)
-	// }
-
 	start := time.Now()
 
 	for {
@@ -107,25 +93,3 @@ func (cc *chatConsumer) Poll() ([]models.Message, error) {
 	fmt.Println("Acked last")
 	return filter(arr, nonNil), nil
 }
-
-// func (cc *chatConsumer) Run() {
-
-// 	for record := range cc.pulsarConsumer.Chan() {
-// 		msg := record.Message
-// 		cc.pulsarConsumer.Ack(msg)
-
-// 		fmt.Println("internal consumer")
-// 		jsonMsg := models.Message{}
-
-// 		err := json.Unmarshal(msg.Payload(), &jsonMsg)
-// 		if err != nil {
-// 			println("err err")
-// 			log.Println(err)
-// 		}
-
-// 		fmt.Printf("Received message msgId: %#v -- content: '%s'\n",
-// 			msg.ID(), jsonMsg.Message)
-
-// 		//cc.Channel <- jsonMsg // TODO Wire up to front-end
-// 	}
-// }
